@@ -99,7 +99,7 @@ with st.sidebar.form(key="post_form"):
     if submit_button and post_content:
         add_post(post_content)
         st.sidebar.success("🎉 Your post has been shared!")
-        st.experimental_rerun()
+        st.rerun()
 
 # Confession Box
 st.sidebar.header("🤫 Confession Box")
@@ -109,7 +109,7 @@ with st.sidebar.form(key="confession_form"):
     if submit_confession_button and confession_content:
         add_confession(confession_content)
         st.sidebar.success("🤐 Your confession has been shared!")
-        st.experimental_rerun()
+        st.rerun()
 
 # Poll Creation
 st.sidebar.header("📊 Create a Poll")
@@ -121,7 +121,7 @@ with st.sidebar.form(key="poll_form"):
     if submit_poll_button and poll_question and option_a and option_b:
         add_poll(poll_question, option_a, option_b)
         st.sidebar.success("🗳️ Your poll has been created!")
-        st.experimental_rerun()
+        st.rerun()
 
 # Display posts
 st.subheader("📢 Community Feed")
@@ -135,7 +135,7 @@ if posts:
         if st.button(f"👻 Mystery Like ({likes})", key=f"like_{post_id}"):
             add_like(post_id)
             st.success("✨ Someone liked this!")
-            st.experimental_rerun()
+            st.rerun()
 
         # Comments section
         comment_text = st.text_input(f"Add a comment for post {post_id}", key=f"comment_{post_id}")
@@ -144,7 +144,7 @@ if posts:
                 c.execute('INSERT INTO comments (post_id, content) VALUES (?, ?)', (post_id, comment_text))
                 conn.commit()
                 st.success("🗨️ Your comment has been added!")
-                st.experimental_rerun()
+                st.rerun()
 
         st.write("---")
 
@@ -176,7 +176,7 @@ for poll_id, question, option_a, option_b, votes_a, votes_b in polls:
             c.execute('UPDATE polls SET votes_b = votes_b + 1 WHERE id = ?', (poll_id,))
         conn.commit()
         st.success("✅ Your vote has been recorded!")
-        st.experimental_rerun()
+        st.rerun()
 
 # Story Time Section
 st.subheader("📖 Story Time")
@@ -185,7 +185,7 @@ if st.button("Share Story"):
     if story:
         add_post(story)
         st.success("📚 Your story has been shared!")
-        st.experimental_rerun()
+        st.rerun()
 
 # Whisper Mode
 st.subheader("🔊 Whisper Mode")
