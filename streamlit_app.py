@@ -9,7 +9,6 @@ c = conn.cursor()
 # Database setup
 def create_tables():
     try:
-        # Posts Table
         c.execute('''
             CREATE TABLE IF NOT EXISTS posts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,7 +20,6 @@ def create_tables():
             )
         ''')
 
-        # Comments Table
         c.execute('''
             CREATE TABLE IF NOT EXISTS comments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +29,6 @@ def create_tables():
             )
         ''')
 
-        # Polls Table
         c.execute('''
             CREATE TABLE IF NOT EXISTS polls (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +40,6 @@ def create_tables():
             )
         ''')
 
-        # Confessions Table
         c.execute('''
             CREATE TABLE IF NOT EXISTS confessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +48,6 @@ def create_tables():
             )
         ''')
 
-        # Mystery Box Table
         c.execute('''
             CREATE TABLE IF NOT EXISTS mystery_box (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,7 +56,6 @@ def create_tables():
             )
         ''')
 
-        # Q&A Table
         c.execute('''
             CREATE TABLE IF NOT EXISTS qa (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,9 +86,13 @@ def get_posts():
     return c.fetchall()
 
 def add_like(post_id):
-    c.execute('UPDATE posts SET likes = likes + 1 WHERE id = ?', (post_id,))
-    c.execute('UPDATE posts SET karma = karma + 1 WHERE id = ?', (post_id,))
-    conn.commit()
+    try:
+        c.execute('UPDATE posts SET likes = likes + 1, karma = karma + 1 WHERE id = ?', (post_id,))
+        conn.commit()
+    except sqlite3.OperationalError as e:
+        st.error(f"Operational error: {e}")
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
 
 def add_confession(content):
     c.execute('INSERT INTO confessions (content) VALUES (?)', (content,))
