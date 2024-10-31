@@ -8,16 +8,19 @@ c = conn.cursor()
 
 # Database setup
 try:
+    # Posts Table
     c.execute('''
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             likes INTEGER DEFAULT 0,
-            username TEXT NOT NULL
+            username TEXT NOT NULL,
+            karma INTEGER DEFAULT 0
         )
     ''')
 
+    # Comments Table
     c.execute('''
         CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,6 +30,7 @@ try:
         )
     ''')
 
+    # Polls Table
     c.execute('''
         CREATE TABLE IF NOT EXISTS polls (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,10 +42,30 @@ try:
         )
     ''')
 
+    # Confessions Table
     c.execute('''
         CREATE TABLE IF NOT EXISTS confessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Mystery Box Table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS mystery_box (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Q&A Table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS qa (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question TEXT NOT NULL,
+            answer TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -66,6 +90,7 @@ def get_posts():
 
 def add_like(post_id):
     c.execute('UPDATE posts SET likes = likes + 1 WHERE id = ?', (post_id,))
+    c.execute('UPDATE posts SET karma = karma + 1 WHERE id = ?', (post_id,))
     conn.commit()
 
 def add_confession(content):
@@ -82,6 +107,26 @@ def add_poll(question, option_a, option_b):
 
 def get_polls():
     c.execute('SELECT id, question, option_a, option_b, votes_a, votes_b FROM polls')
+    return c.fetchall()
+
+def add_mystery_message(content):
+    c.execute('INSERT INTO mystery_box (content) VALUES (?)', (content,))
+    conn.commit()
+
+def get_random_mystery():
+    c.execute('SELECT content FROM mystery_box ORDER BY RANDOM() LIMIT 1')
+    return c.fetchone()
+
+def add_qa(question):
+    c.execute('INSERT INTO qa (question) VALUES (?)', (question,))
+    conn.commit()
+
+def answer_qa(question_id, answer):
+    c.execute('UPDATE qa SET answer = ? WHERE id = ?', (answer, question_id))
+    conn.commit()
+
+def get_qa():
+    c.execute('SELECT id, question, answer FROM qa ORDER BY created_at DESC')
     return c.fetchall()
 
 # Streamlit app layout
@@ -119,6 +164,31 @@ with st.sidebar.form(key="poll_form"):
         add_poll(poll_question, option_a, option_b)
         st.sidebar.success("🗳️ Your poll has been created!")
         st.rerun()
+
+# Mystery Box
+st.sidebar.header("🎁 Mystery Box")
+with st.sidebar.form(key="mystery_form"):
+    mystery_content = st.text_area("Add a mystery message...", max_chars=280)
+    submit_mystery_button = st.form_submit_button("Share Mystery Message")
+    if submit_mystery_button and mystery_content:
+        add_mystery_message(mystery_content)
+        st.sidebar.success("🎉 Your mystery message has been added!")
+
+if st.sidebar.button("Reveal a Mystery"):
+    mystery = get_random_mystery()
+    if mystery:
+        st.sidebar.markdown(f"<div style='padding: 10px; border: 1px solid #ddd;'>{mystery[0]}</div>", unsafe_allow_html=True)
+    else:
+        st.sidebar.info("No mystery messages yet.")
+
+# Anonymous Q&A
+st.sidebar.header("❓ Ask a Question")
+with st.sidebar.form(key="qa_form"):
+    qa_question = st.text_input("What's your question?")
+    submit_qa_button = st.form_submit_button("Submit Question")
+    if submit_qa_button and qa_question:
+        add_qa(qa_question)
+        st.sidebar.success("📝 Your question has been submitted!")
 
 # Display posts
 st.subheader("📢 Community Feed")
@@ -175,22 +245,22 @@ for poll_id, question, option_a, option_b, votes_a, votes_b in polls:
         st.success("✅ Your vote has been recorded!")
         st.rerun()
 
-# Story Time Section
-st.subheader("📖 Story Time")
-story = st.text_area("Share your short story anonymously...")
-if st.button("Share Story"):
-    if story:
-        add_post(story)
-        st.success("📚 Your story has been shared!")
-        st.rerun()
-
-# Whisper Mode
-st.subheader("🔊 Whisper Mode")
-whisper_message = st.text_input("Send an anonymous message...")
-if st.button("Send Whisper"):
-    if whisper_message:
-        st.success("📩 Your whisper has been sent anonymously!")
-        # Note: Implement whisper logic here if you want to store and display whispers
+# Display Anonymous Q&A
+st.subheader("❓ Community Q&A")
+qa_list = get_qa()
+if qa_list:
+    for q_id, question, answer in qa_list:
+        st.markdown(f"**Q:** {question}")
+        if answer:
+            st.markdown(f"**A:** {answer}")
+        else:
+            answer_text = st.text_input(f"Answer this question:", key=f"answer_{q_id}")
+            if st.button("Submit Answer", key=f"submit_answer_{q_id}"):
+                answer_qa(q_id, answer_text)
+                st.success("✅ Your answer has been submitted!")
+                st.rerun()
+else:
+    st.info("No questions yet. Be the first to ask!")
 
 # Close the database connection when done
 conn.close()
