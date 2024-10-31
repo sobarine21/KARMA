@@ -6,7 +6,7 @@ import random
 conn = sqlite3.connect('community_feed.db', check_same_thread=False)
 c = conn.cursor()
 
-# Reset database schema for development
+# Reset database schema for development (remove these in production)
 c.execute('DROP TABLE IF EXISTS posts')
 c.execute('DROP TABLE IF EXISTS comments')
 c.execute('DROP TABLE IF EXISTS polls')
@@ -134,15 +134,16 @@ if posts:
 
         if st.button(f"👻 Mystery Like ({likes})", key=f"like_{post_id}"):
             add_like(post_id)
-            st.markdown("<div style='color: green;'>✨ Someone liked this!</div>", unsafe_allow_html=True)
+            st.success("✨ Someone liked this!")
             st.experimental_rerun()
 
         # Comments section
-        if st.button("💬 Comment", key=f"comment_button_{post_id}"):
-            comment_text = st.text_input(f"Add a comment for post {post_id}", key=f"comment_{post_id}")
+        comment_text = st.text_input(f"Add a comment for post {post_id}", key=f"comment_{post_id}")
+        if st.button("💬 Submit Comment", key=f"submit_comment_{post_id}"):
             if comment_text:
                 c.execute('INSERT INTO comments (post_id, content) VALUES (?, ?)', (post_id, comment_text))
                 conn.commit()
+                st.success("🗨️ Your comment has been added!")
                 st.experimental_rerun()
 
         st.write("---")
