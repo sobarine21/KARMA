@@ -1,7 +1,6 @@
 import streamlit as st
 import sqlite3
 import random
-from datetime import datetime
 
 # Initialize database connection
 conn = sqlite3.connect('community_feed.db', check_same_thread=False)
@@ -11,6 +10,7 @@ c = conn.cursor()
 c.execute('DROP TABLE IF EXISTS posts')
 c.execute('DROP TABLE IF EXISTS comments')
 c.execute('DROP TABLE IF EXISTS polls')
+c.execute('DROP TABLE IF EXISTS confessions')
 
 # Database setup
 c.execute('''
@@ -42,6 +42,15 @@ c.execute('''
         votes_b INTEGER DEFAULT 0
     )
 ''')
+
+c.execute('''
+    CREATE TABLE IF NOT EXISTS confessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+''')
+
 conn.commit()
 
 # Helper functions
@@ -61,6 +70,14 @@ def get_posts():
 def add_like(post_id):
     c.execute('UPDATE posts SET likes = likes + 1 WHERE id = ?', (post_id,))
     conn.commit()
+
+def add_confession(content):
+    c.execute('INSERT INTO confessions (content) VALUES (?)', (content,))
+    conn.commit()
+
+def get_confessions():
+    c.execute('SELECT content, created_at FROM confessions ORDER BY created_at DESC')
+    return c.fetchall()
 
 def add_poll(question, option_a, option_b):
     c.execute('INSERT INTO polls (question, option_a, option_b) VALUES (?, ?, ?)', (question, option_a, option_b))
@@ -84,6 +101,16 @@ with st.sidebar.form(key="post_form"):
         st.sidebar.success("🎉 Your post has been shared!")
         st.experimental_rerun()
 
+# Confession Box
+st.sidebar.header("🤫 Confession Box")
+with st.sidebar.form(key="confession_form"):
+    confession_content = st.text_area("What's your secret?", max_chars=280)
+    submit_confession_button = st.form_submit_button("Share Confession")
+    if submit_confession_button and confession_content:
+        add_confession(confession_content)
+        st.sidebar.success("🤐 Your confession has been shared!")
+        st.experimental_rerun()
+
 # Poll Creation
 st.sidebar.header("📊 Create a Poll")
 with st.sidebar.form(key="poll_form"):
@@ -102,18 +129,36 @@ posts = get_posts()
 
 if posts:
     for post_id, content, created_at, likes, username in posts:
-        st.markdown(f"<div class='post-content'><strong>{username}:</strong> {content}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='padding: 10px; border: 1px solid #ddd; margin-bottom: 10px;'><strong>{username}:</strong> {content}</div>", unsafe_allow_html=True)
         st.write(f"📅 *Posted on {created_at}* - 👍 {likes} Likes")
 
         if st.button(f"👻 Mystery Like ({likes})", key=f"like_{post_id}"):
             add_like(post_id)
-            st.markdown("<div class='mystery-like'>✨ Someone liked this!</div>", unsafe_allow_html=True)
+            st.markdown("<div style='color: green;'>✨ Someone liked this!</div>", unsafe_allow_html=True)
             st.experimental_rerun()
+
+        # Comments section
+        if st.button("💬 Comment", key=f"comment_button_{post_id}"):
+            comment_text = st.text_input(f"Add a comment for post {post_id}", key=f"comment_{post_id}")
+            if comment_text:
+                c.execute('INSERT INTO comments (post_id, content) VALUES (?, ?)', (post_id, comment_text))
+                conn.commit()
+                st.experimental_rerun()
 
         st.write("---")
 
 else:
     st.info("No posts yet. Be the first to share!")
+
+# Display Confessions
+st.subheader("🤫 Confessions")
+confessions = get_confessions()
+if confessions:
+    for content, created_at in confessions:
+        st.markdown(f"<div style='padding: 10px; border: 1px solid #ddd; margin-bottom: 10px;'>{content}</div>", unsafe_allow_html=True)
+        st.write(f"📅 *Confessed on {created_at}*")
+else:
+    st.info("No confessions yet. Be the first to share!")
 
 # Display polls
 st.subheader("📊 Community Polls")
@@ -132,7 +177,7 @@ for poll_id, question, option_a, option_b, votes_a, votes_b in polls:
         st.success("✅ Your vote has been recorded!")
         st.experimental_rerun()
 
-# Additional fun features
+# Story Time Section
 st.subheader("📖 Story Time")
 story = st.text_area("Share your short story anonymously...")
 if st.button("Share Story"):
@@ -141,9 +186,10 @@ if st.button("Share Story"):
         st.success("📚 Your story has been shared!")
         st.experimental_rerun()
 
+# Whisper Mode
 st.subheader("🔊 Whisper Mode")
-whisper_message = st.text_input("Send an anonymous message to someone...")
+whisper_message = st.text_input("Send an anonymous message...")
 if st.button("Send Whisper"):
     if whisper_message:
         st.success("📩 Your whisper has been sent anonymously!")
-        st.experimental_rerun()
+        # Note: Implement whisper logic here if you want to store and display whispers
