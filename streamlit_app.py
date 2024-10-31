@@ -81,8 +81,15 @@ st.markdown("""
     }
     .post-content {
         padding: 10px;
-        border-radius: 5px;
-        background-color: #f4f4f4;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        margin-bottom: 10px;
+        transition: transform 0.2s;
+    }
+    .post-content:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
     .comment-content {
         padding: 5px;
@@ -110,19 +117,23 @@ st.subheader("🔍 Search Posts")
 search_query = st.text_input("Enter keyword to search...")
 if search_query:
     search_results = search_posts(search_query)
-    st.write(f"**Results for '{search_query}':**")
-    for post_id, content, created_at, likes in search_results:
-        st.markdown(f"**{content}**")
-        st.write(f"📅 *Posted on {created_at}* - 👍 {likes} Likes")
-        st.write("---")
+    if search_results:
+        st.write(f"**Results for '{search_query}':**")
+        for post_id, content, created_at, likes in search_results:
+            st.markdown(f"**{content}**")
+            st.write(f"📅 *Posted on {created_at}* - 👍 {likes} Likes")
+            st.write("---")
+    else:
+        st.warning("No results found!")
 
 # Display top posts based on likes
 st.subheader("🔥 Top Posts")
 top_posts = get_top_posts()
-for post_id, content, created_at, likes in top_posts:
-    st.markdown(f"**{content}**")
-    st.write(f"📅 *Posted on {created_at}* - 👍 {likes} Likes")
-    st.write("---")
+if top_posts:
+    for post_id, content, created_at, likes in top_posts:
+        st.markdown(f"**{content}**")
+        st.write(f"📅 *Posted on {created_at}* - 👍 {likes} Likes")
+        st.write("---")
 
 # Display all posts in the community feed
 st.subheader("📢 Community Feed")
@@ -142,7 +153,7 @@ if posts:
                 st.experimental_rerun()
 
         # Comments section with an expandable view
-        with st.expander("💬 View Comments"):
+        with st.expander("💬 View Comments", expanded=False):
             comments = get_comments(post_id)
             for comment_content, comment_date in comments:
                 st.markdown(f"<div class='comment-content'>{comment_content} - <i>{comment_date}</i></div>", unsafe_allow_html=True)
@@ -162,4 +173,3 @@ if posts:
         st.write("---")
 else:
     st.info("No posts yet. Be the first to share!")
-
