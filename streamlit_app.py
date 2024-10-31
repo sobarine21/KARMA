@@ -7,72 +7,75 @@ conn = sqlite3.connect('community_feed.db', check_same_thread=False)
 c = conn.cursor()
 
 # Database setup
-try:
-    # Posts Table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            likes INTEGER DEFAULT 0,
-            username TEXT NOT NULL,
-            karma INTEGER DEFAULT 0
-        )
-    ''')
+def create_tables():
+    try:
+        # Posts Table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS posts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                likes INTEGER DEFAULT 0,
+                username TEXT NOT NULL,
+                karma INTEGER DEFAULT 0
+            )
+        ''')
 
-    # Comments Table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS comments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            post_id INTEGER,
-            content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+        # Comments Table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                post_id INTEGER,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
 
-    # Polls Table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS polls (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            question TEXT NOT NULL,
-            option_a TEXT NOT NULL,
-            option_b TEXT NOT NULL,
-            votes_a INTEGER DEFAULT 0,
-            votes_b INTEGER DEFAULT 0
-        )
-    ''')
+        # Polls Table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS polls (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                question TEXT NOT NULL,
+                option_a TEXT NOT NULL,
+                option_b TEXT NOT NULL,
+                votes_a INTEGER DEFAULT 0,
+                votes_b INTEGER DEFAULT 0
+            )
+        ''')
 
-    # Confessions Table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS confessions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+        # Confessions Table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS confessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
 
-    # Mystery Box Table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS mystery_box (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+        # Mystery Box Table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS mystery_box (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
 
-    # Q&A Table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS qa (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            question TEXT NOT NULL,
-            answer TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+        # Q&A Table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS qa (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                question TEXT NOT NULL,
+                answer TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
 
-    conn.commit()
-except Exception as e:
-    print(f"Error creating tables: {e}")
+        conn.commit()
+    except Exception as e:
+        st.error(f"Error creating tables: {e}")
+
+create_tables()
 
 # Helper functions
 def random_nickname():
@@ -141,7 +144,7 @@ with st.sidebar.form(key="post_form"):
     if submit_button and post_content:
         add_post(post_content)
         st.sidebar.success("🎉 Your post has been shared!")
-        st.rerun()
+        st.experimental_rerun()
 
 # Confession Box
 st.sidebar.header("🤫 Confession Box")
@@ -151,7 +154,7 @@ with st.sidebar.form(key="confession_form"):
     if submit_confession_button and confession_content:
         add_confession(confession_content)
         st.sidebar.success("🤐 Your confession has been shared!")
-        st.rerun()
+        st.experimental_rerun()
 
 # Poll Creation
 st.sidebar.header("📊 Create a Poll")
@@ -163,7 +166,7 @@ with st.sidebar.form(key="poll_form"):
     if submit_poll_button and poll_question and option_a and option_b:
         add_poll(poll_question, option_a, option_b)
         st.sidebar.success("🗳️ Your poll has been created!")
-        st.rerun()
+        st.experimental_rerun()
 
 # Mystery Box
 st.sidebar.header("🎁 Mystery Box")
@@ -202,7 +205,7 @@ if posts:
         if st.button(f"👻 Mystery Like ({likes})", key=f"like_{post_id}"):
             add_like(post_id)
             st.success("✨ Someone liked this!")
-            st.rerun()
+            st.experimental_rerun()
 
         # Comments section
         comment_text = st.text_input(f"Add a comment for post {post_id}", key=f"comment_{post_id}")
@@ -211,7 +214,7 @@ if posts:
                 c.execute('INSERT INTO comments (post_id, content) VALUES (?, ?)', (post_id, comment_text))
                 conn.commit()
                 st.success("🗨️ Your comment has been added!")
-                st.rerun()
+                st.experimental_rerun()
 
         st.write("---")
 
@@ -231,21 +234,24 @@ else:
 # Display polls
 st.subheader("📊 Community Polls")
 polls = get_polls()
-for poll_id, question, option_a, option_b, votes_a, votes_b in polls:
-    st.write(f"**{question}**")
-    st.write(f"1️⃣ {option_a} - {votes_a} Votes")
-    st.write(f"2️⃣ {option_b} - {votes_b} Votes")
-    vote_option = st.radio("Choose an option:", (option_a, option_b), key=f"poll_{poll_id}")
-    if st.button("Vote", key=f"vote_{poll_id}"):
-        if vote_option == option_a:
-            c.execute('UPDATE polls SET votes_a = votes_a + 1 WHERE id = ?', (poll_id,))
-        else:
-            c.execute('UPDATE polls SET votes_b = votes_b + 1 WHERE id = ?', (poll_id,))
-        conn.commit()
-        st.success("✅ Your vote has been recorded!")
-        st.rerun()
+if polls:
+    for poll_id, question, option_a, option_b, votes_a, votes_b in polls:
+        st.write(f"**{question}**")
+        st.write(f"1️⃣ {option_a} - {votes_a} Votes")
+        st.write(f"2️⃣ {option_b} - {votes_b} Votes")
+        vote_option = st.radio("Choose an option:", (option_a, option_b), key=f"poll_{poll_id}")
+        if st.button("Vote", key=f"vote_{poll_id}"):
+            if vote_option == option_a:
+                c.execute('UPDATE polls SET votes_a = votes_a + 1 WHERE id = ?', (poll_id,))
+            else:
+                c.execute('UPDATE polls SET votes_b = votes_b + 1 WHERE id = ?', (poll_id,))
+            conn.commit()
+            st.success("✅ Your vote has been recorded!")
+            st.experimental_rerun()
+else:
+    st.info("No polls yet. Be the first to create one!")
 
-# Display Anonymous Q&A
+# Display Q&A
 st.subheader("❓ Community Q&A")
 qa_list = get_qa()
 if qa_list:
@@ -258,7 +264,7 @@ if qa_list:
             if st.button("Submit Answer", key=f"submit_answer_{q_id}"):
                 answer_qa(q_id, answer_text)
                 st.success("✅ Your answer has been submitted!")
-                st.rerun()
+                st.experimental_rerun()
 else:
     st.info("No questions yet. Be the first to ask!")
 
