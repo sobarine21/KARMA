@@ -10,16 +10,13 @@ c = conn.cursor()
 # Database setup
 def create_tables():
     try:
-        c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
+        c.execute('''CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL,
             avatar TEXT
-        )
-        ''')
+        )''')
 
-        c.execute('''
-        CREATE TABLE IF NOT EXISTS posts (
+        c.execute('''CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -27,63 +24,60 @@ def create_tables():
             username TEXT NOT NULL,
             mood TEXT,
             karma INTEGER DEFAULT 0
-        )
-        ''')
+        )''')
 
-        c.execute('''
-        CREATE TABLE IF NOT EXISTS comments (
+        c.execute('''CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             post_id INTEGER,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
+        )''')
 
-        c.execute('''
-        CREATE TABLE IF NOT EXISTS polls (
+        c.execute('''CREATE TABLE IF NOT EXISTS polls (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             question TEXT NOT NULL,
             option_a TEXT NOT NULL,
             option_b TEXT NOT NULL,
             votes_a INTEGER DEFAULT 0,
             votes_b INTEGER DEFAULT 0
-        )
-        ''')
+        )''')
 
-        c.execute('''
-        CREATE TABLE IF NOT EXISTS confessions (
+        c.execute('''CREATE TABLE IF NOT EXISTS confessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
+        )''')
 
-        c.execute('''
-        CREATE TABLE IF NOT EXISTS mystery_box (
+        c.execute('''CREATE TABLE IF NOT EXISTS mystery_box (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
+        )''')
 
-        c.execute('''
-        CREATE TABLE IF NOT EXISTS qa (
+        c.execute('''CREATE TABLE IF NOT EXISTS qa (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             question TEXT NOT NULL,
             answer TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
+        )''')
 
         conn.commit()
-    except sqlite3.Error as e:
-        st.error(f"SQLite error: {e}")
-        print(f"SQLite error: {e}")
     except Exception as e:
-        st.error(f"Unexpected error: {e}")
-        print(f"Unexpected error: {e}")
+        st.error(f"Error creating tables: {e}")
 
 create_tables()
+
+def recreate_posts_table():
+    try:
+        c.execute('CREATE TABLE IF NOT EXISTS posts_temp AS SELECT id, content, created_at, likes, username FROM posts')
+        c.execute('DROP TABLE posts')
+        c.execute('ALTER TABLE posts_temp RENAME TO posts')
+        c.execute('ALTER TABLE posts ADD COLUMN mood TEXT')
+        conn.commit()
+    except sqlite3.Error as e:
+        st.error(f"SQLite error during recreation: {e}")
+
+recreate_posts_table()
 
 # Helper functions
 def random_nickname():
