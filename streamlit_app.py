@@ -156,12 +156,14 @@ if posts:
         st.write(f"📅 *Posted on {created_at}* - 👍 {likes} Likes")
 
         # Like functionality
-        if st.button(f"👻 Like ({likes})", key=f"like_button_{post_id}"):  # Updated key
+        like_key = f"like_button_{post_id}"
+        if st.button(f"👻 Like ({likes})", key=like_key):  # Unique key
             add_like(post_id)
             st.success("✨ Someone liked this!")
 
         # Comment functionality
-        comment_text = st.text_input(f"Add a comment for post {post_id}", key=f"comment_input_{post_id}")  # Updated key
+        comment_key = f"comment_input_{post_id}"
+        comment_text = st.text_input(f"Add a comment for post {post_id}", key=comment_key)  # Unique key
         if st.button("💬 Submit Comment", key=f"submit_comment_{post_id}"):
             if comment_text:
                 add_comment(post_id, comment_text)
@@ -216,8 +218,9 @@ if polls:
         st.write(f"**{question}**")
         st.write(f"1️⃣ {option_a} - {votes_a} Votes")
         st.write(f"2️⃣ {option_b} - {votes_b} Votes")
-        vote_option = st.radio("Choose an option:", (option_a, option_b), key=f"poll_radio_{poll_id}")  # Updated key
-        if st.button("Vote", key=f"vote_poll_button_{poll_id}"):  # Updated key
+        vote_key = f"poll_radio_{poll_id}"
+        vote_option = st.radio("Choose an option:", (option_a, option_b), key=vote_key)  # Unique key
+        if st.button("Vote", key=f"vote_poll_button_{poll_id}"):  # Unique key
             vote_poll(poll_id, 'A' if vote_option == option_a else 'B')
             st.success("✅ Your vote has been recorded!")
 else:
