@@ -1,6 +1,7 @@
 import streamlit as st
 import sqlite3
 import random
+from datetime import datetime
 
 # Initialize database connection
 conn = sqlite3.connect('community_feed.db', check_same_thread=False)
@@ -10,12 +11,21 @@ c = conn.cursor()
 def create_tables():
     try:
         c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            avatar TEXT
+        )
+        ''')
+
+        c.execute('''
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             likes INTEGER DEFAULT 0,
             username TEXT NOT NULL,
+            mood TEXT,
             karma INTEGER DEFAULT 0
         )
         ''')
@@ -76,13 +86,13 @@ def random_nickname():
     nicknames = ["Mysterious Dolphin", "Sneaky Ninja", "Curious Cat", "Wandering Wizard", "Clever Fox"]
     return random.choice(nicknames)
 
-def add_post(content):
+def add_post(content, mood):
     username = random_nickname()
-    c.execute('INSERT INTO posts (content, username) VALUES (?, ?)', (content, username))
+    c.execute('INSERT INTO posts (content, username, mood) VALUES (?, ?, ?)', (content, username, mood))
     conn.commit()
 
 def get_posts():
-    c.execute('SELECT id, content, created_at, likes, username FROM posts ORDER BY created_at DESC')
+    c.execute('SELECT id, content, created_at, likes, username, mood FROM posts ORDER BY created_at DESC')
     return c.fetchall()
 
 def add_like(post_id):
@@ -138,9 +148,10 @@ st.title("🌐 Anonymous Community Feed")
 st.sidebar.header("📝 Share Something")
 with st.sidebar.form(key="post_form"):
     post_content = st.text_area("What's on your mind?", max_chars=280)
+    mood = st.selectbox("How do you feel?", ["😊 Happy", "😢 Sad", "😡 Angry", "😄 Excited", "😐 Neutral"])
     submit_button = st.form_submit_button("Post")
     if submit_button and post_content:
-        add_post(post_content)
+        add_post(post_content, mood)
         st.sidebar.success("🎉 Your post has been shared!")
         st.experimental_rerun()
 
@@ -196,8 +207,8 @@ st.subheader("📢 Community Feed")
 posts = get_posts()
 
 if posts:
-    for post_id, content, created_at, likes, username in posts:
-        st.markdown(f"<div style='padding: 10px; border: 1px solid #ddd; margin-bottom: 10px;'><strong>{username}:</strong> {content}</div>", unsafe_allow_html=True)
+    for post_id, content, created_at, likes, username, mood in posts:
+        st.markdown(f"<div style='padding: 10px; border: 1px solid #ddd; margin-bottom: 10px;'><strong>{username} ({mood}):</strong> {content}</div>", unsafe_allow_html=True)
         st.write(f"📅 *Posted on {created_at}* - 👍 {likes} Likes")
 
         if st.button(f"👻 Mystery Like ({likes})", key=f"like_{post_id}"):
