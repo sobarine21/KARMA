@@ -76,8 +76,12 @@ def create_tables():
         ''')
 
         conn.commit()
+    except sqlite3.Error as e:
+        st.error(f"SQLite error: {e}")
+        print(f"SQLite error: {e}")
     except Exception as e:
-        st.error(f"Error creating tables: {e}")
+        st.error(f"Unexpected error: {e}")
+        print(f"Unexpected error: {e}")
 
 create_tables()
 
