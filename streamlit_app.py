@@ -2,7 +2,7 @@ import streamlit as st
 import sqlite3
 import random
 
-# Initialize database connection
+# Initialize databasee connection
 def init_db():
     try:
         conn = sqlite3.connect('community_feed.db', check_same_thread=False)
